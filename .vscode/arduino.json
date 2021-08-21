@@ -1,0 +1,6 @@
+{
+    "board": "adafruit:nrf52:feather52840sense",
+    "enableUSBDetection": true,
+    "sketch": "CO2_Sense.ino",
+    "port": "/dev/cu.usbmodem141101"
+}
