@@ -93,7 +93,12 @@ bool SCD41::init(void){
     // Force 5sec there should be a better way...
     uint32_t elapsedTimeMillis = millis() - startTimeMillis;
     if ((DATASHEET_DELAY - elapsedTimeMillis) > 0) {
+        Serial.print("About to wait (ms)... ");
+        Serial.println(DATASHEET_DELAY - elapsedTimeMillis);
         delay(DATASHEET_DELAY - elapsedTimeMillis);
+    } else {
+        Serial.print("No wait needed time elapsed (ms)... ");
+        Serial.println(elapsedTimeMillis);
     }
     
     return true;

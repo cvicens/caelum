@@ -65,20 +65,6 @@ boolean setupGPS(uint16_t retry){
   return false;
 }
 
-// boolean setupSCD4X(uint16_t retry) {
-//   do {
-//     if (scd41.init()) {
-//         return true;
-//     }
-
-//     Serial.println("SCD41 sensor is not ready or available");
-    
-//     delay(100);
-//   } while (retry--);
-  
-//   return false;
-// }
-
 char* parseGPSTime(void) {
   char buffer[256];
   sprintf(buffer, "%02i:%02i:%02i", GPS.hour, GPS.minute, GPS.seconds);
@@ -114,6 +100,7 @@ void setup() {
 
   if (dataLogger.init()) {
     Serial.println("DATA_LOGGING OK");
+    //dataLogger.dumpToSerial(); // This makes the micro to stop working
   } else {
     Serial.println("DATA_LOGGING KO");
   }
@@ -138,7 +125,6 @@ void loop() {
   // else if(gesture == APDS9960_LEFT) Serial.println("APDS9960_LEFT");
   // else if(gesture == APDS9960_RIGHT) Serial.println("APDS9960_RIGHT");
   // else Serial.println("==========================");
-
 
   // read data from the GPS in the 'main loop'
   char c = GPS.read();
@@ -167,19 +153,21 @@ void loop() {
     uint16_t scd41Co2;
     float scd41Temperature;
     float scd41Humidity;
-    Serial.print("CO2:");
-    Serial.print(scd41Co2);
-    Serial.print("\t");
-    Serial.print("Temperature:");
-    Serial.print(scd41Temperature);
-    Serial.print("\t");
-    Serial.print("Humidity:");
-    Serial.println(scd41Humidity);
     if (scd41.readMeasurement(scd41Co2, scd41Temperature, scd41Humidity, error, errorMessage, 256)) {
-        display.main(scd41Co2, scd41Temperature, scd41Humidity, vbat);
+      Serial.print("CO2: ");
+      Serial.print(scd41Co2);
+      Serial.print("\t");
+      Serial.print("Temperature: ");
+      Serial.print(scd41Temperature);
+      Serial.print("\t");
+      Serial.print("Humidity: ");
+      Serial.println(scd41Humidity);
+      display.main(scd41Co2, scd41Temperature, scd41Humidity, vbat);
     } else {
         Serial.println(errorMessage);
     }
+
+    Serial.println("About to read sensors!!!");
 
     // Read Sensors
     float senseTemperature = sensors.readTemperature();
@@ -196,12 +184,17 @@ void loop() {
     Serial.print(sensePressure);
     Serial.print("\t");
     Serial.print("Altitude:");
-    Serial.println(senseAltitude);
+    Serial.print(senseAltitude);
+    Serial.print("\t");
+    Serial.print("Proximity:");
+    Serial.println(senseProximity);
 
     // Data logging
-    // char data[50];
-    // sprintf (data, "CO2 (ppm): %4d \nTemp (C): %4.2f \nHum (%%):  %4.2f", scd41Co2, scd41Temperature, scd41Humidity);
-    // dataLogger.writeLine(data);
+    char data[50];
+    // CO2 (ppm), Temp (C), Hum (%)
+    //sprintf (data, "CO2 (ppm): %4d Temp (C): %4.2f \nHum (%%):  %4.2f", scd41Co2, scd41Temperature, scd41Humidity);
+    sprintf (data, "%d,%.2f,%.2f", scd41Co2, scd41Temperature, scd41Humidity);
+    dataLogger.writeLine(data);
 
     // Timer and GPS
     timer = millis(); // reset the timer

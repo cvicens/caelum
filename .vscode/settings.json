@@ -3,6 +3,7 @@
         "println"
     ],
     "cSpell.ignoreWords": [
-        "apds"
+        "apds",
+        "fatfs"
     ]
 }

@@ -79,8 +79,8 @@ void Display::main(uint16_t co2, float temperature, float humidity, float vbat)
 {
   Serial.println("->Display::main()");
 
-  char buffer[50];
-  sprintf (buffer, "CO2 (ppm): %d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f", co2, temperature, humidity, vbat);
+  char buffer[100];
+  sprintf (buffer, "CO2 (ppm): %4d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f", co2, temperature, humidity, vbat);
 
   if (initialized) {
     sh1107->setTextSize(1);
@@ -91,11 +91,13 @@ void Display::main(uint16_t co2, float temperature, float humidity, float vbat)
 
     sh1107->display();
   }
+
+  Serial.println("<-Display::main()");
 }
 
 void Display::mainWithLatLong(uint16_t co2, float temperature, float humidity, float latitude, float longitude)
 {
-  Serial.println("->Display::main()");
+  Serial.println("->Display::mainWithLatLong()");
 
   char buffer[50];
   sprintf (buffer, "CO2 (ppm): %4d \nTemp (C): %4.2f \nHum (%%):  %4.2f", co2, temperature, humidity);
@@ -118,6 +120,8 @@ void Display::mainWithLatLong(uint16_t co2, float temperature, float humidity, f
 
     sh1107->display();
   }
+
+  Serial.println("<-Display::mainWithLatLong()");
 }
 
 

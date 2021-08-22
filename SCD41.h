@@ -15,7 +15,7 @@
 
 #include <SensirionI2CScd4x.h>
 
-#define DATASHEET_DELAY 5000
+#define DATASHEET_DELAY 5500
 
 class SCD41
 {
