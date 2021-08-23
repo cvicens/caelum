@@ -19,7 +19,7 @@ Adafruit_GPS GPS(&GPSSerial);
 
 // Manual timer
 uint32_t timer = millis();
-const uint32_t PERIOD = 5000;
+const uint32_t PERIOD = 30000;
 
 // OLED Display wrapper
 Display display = Display();
@@ -63,17 +63,6 @@ boolean setupGPS(uint16_t retry){
   } while (retry--);
   
   return false;
-}
-
-char* parseGPSTime(void) {
-  char buffer[256];
-  sprintf(buffer, "%02i:%02i:%02i", GPS.hour, GPS.minute, GPS.seconds);
-  Serial.println("Hora 1");
-  Serial.println(GPS.hour);
-  Serial.println("Hora 2");
-  Serial.println(buffer);
-  Serial.println();
-  return buffer;
 }
 
 void setup() {
@@ -189,15 +178,15 @@ void loop() {
     Serial.print("Proximity:");
     Serial.println(senseProximity);
 
+    // Timer and GPS
+    timer = millis(); // reset the timer
+
     // Data logging
     char data[50];
     // CO2 (ppm), Temp (C), Hum (%)
     //sprintf (data, "CO2 (ppm): %4d Temp (C): %4.2f \nHum (%%):  %4.2f", scd41Co2, scd41Temperature, scd41Humidity);
-    sprintf (data, "%d,%.2f,%.2f", scd41Co2, scd41Temperature, scd41Humidity);
+    sprintf (data, "%02d/%02d/%04d %02d:%02d:%02d,%d,%.2f,%.2f,%.2f,%.2f,%.2f", GPS.day, GPS.month, GPS.year, GPS.hour, GPS.minute, GPS.seconds, scd41Co2, scd41Temperature, scd41Humidity, senseTemperature, sensePressure, senseAltitude);
     dataLogger.writeLine(data);
-
-    // Timer and GPS
-    timer = millis(); // reset the timer
 
     Serial.print("\nTime: ");
     if (GPS.hour < 10) { Serial.print('0'); }

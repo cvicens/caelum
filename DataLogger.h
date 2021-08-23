@@ -14,10 +14,10 @@
 #include <Adafruit_SPIFlash.h>
 
 // Max size of the logging files
-#define MAX_FILE_SIZE 1024
+#define MAX_FILE_SIZE 25*1024
 
 // Number of files to maintain while rotating
-#define ROTATION_NUMBER 3
+#define ROTATION_NUMBER 6
 
 // Configuration for the datalogging file:
 #define CONTROL_FILE_NAME "control.dat"

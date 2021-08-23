@@ -74,7 +74,7 @@ bool DataLogger::init(void){
 }
 
 bool DataLogger::rotate(void){
-  uint8_t _index = (index++ < ROTATION_NUMBER) ? index++ : 0;
+  uint8_t _index = (index + 1 < ROTATION_NUMBER) ? index + 1 : 0;
   uint32_t _position = 0;
 
   if (updateControlFile(_index, _position)) {
