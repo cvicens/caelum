@@ -17,17 +17,22 @@
 
 class Display
 {
-  // private:
+  private:
     Adafruit_SH1107 *sh1107;
     bool initialized;
+    bool enabled;
 
   public:
     Display(void);
 
     bool init(uint16_t);
+
+    void off(void);
+    void on(void);
+
     void gps(const char*, const char*, const char*);
     void main(uint16_t co2, float temperature, float humidity, float vbat);
-    void mainWithLatLong(uint16_t co2, float temperature, float humidity, float latitude, float longitude);
+    void main(uint16_t co2, float temperature, float humidity, float vbat, float latitude, char lat, float longitude, char lon);
     
 };
 

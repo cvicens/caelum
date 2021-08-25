@@ -45,6 +45,7 @@ bool Display::init(uint16_t retry){
       pinMode(BUTTON_C, INPUT_PULLUP);
 
       this->initialized = true;
+      this->enabled = true;
 
       return true;
     }
@@ -55,11 +56,24 @@ bool Display::init(uint16_t retry){
   return false;
 }
 
+void Display::on(void){
+  Serial.println("Display::on");
+  this->enabled = true;
+}
+
+void Display::off(void){
+  Serial.println("Display::off");
+  this->enabled = false;
+  
+  sh1107->setCursor(0,0);
+  sh1107->clearDisplay();
+  sh1107->display();
+}
+
 void Display::gps(const char* time, const char* latitude, const char* longitude)
 {
-  Serial.println("->Display::gps()");
   Serial.println(time);
-  if (initialized) {
+  if (initialized && enabled) {
     sh1107->setTextSize(1);
     sh1107->setTextColor(SH110X_WHITE);
     sh1107->setCursor(0,0);
@@ -77,12 +91,10 @@ void Display::gps(const char* time, const char* latitude, const char* longitude)
 
 void Display::main(uint16_t co2, float temperature, float humidity, float vbat)
 {
-  Serial.println("->Display::main()");
-
   char buffer[100];
   sprintf (buffer, "CO2 (ppm): %4d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f", co2, temperature, humidity, vbat);
 
-  if (initialized) {
+  if (initialized && enabled) {
     sh1107->setTextSize(1);
     sh1107->setTextColor(SH110X_WHITE);
     sh1107->setCursor(0,0);
@@ -91,37 +103,22 @@ void Display::main(uint16_t co2, float temperature, float humidity, float vbat)
 
     sh1107->display();
   }
-
-  Serial.println("<-Display::main()");
 }
 
-void Display::mainWithLatLong(uint16_t co2, float temperature, float humidity, float latitude, float longitude)
+void Display::main(uint16_t co2, float temperature, float humidity, float vbat, float latitude, char lat, float longitude, char lon)
 {
-  Serial.println("->Display::mainWithLatLong()");
+  char buffer[150];
+  sprintf (buffer, "CO2 (ppm): %4d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f\nLat: %f %c\nLon: %f %c", co2, temperature, humidity, vbat, latitude, lat, longitude, lon);
 
-  char buffer[50];
-  sprintf (buffer, "CO2 (ppm): %4d \nTemp (C): %4.2f \nHum (%%):  %4.2f", co2, temperature, humidity);
-
-  if (initialized) {
+  if (initialized && enabled) {
     sh1107->setTextSize(1);
     sh1107->setTextColor(SH110X_WHITE);
     sh1107->setCursor(0,0);
     sh1107->clearDisplay();
-
-    // sh1107->print("Time: ");
-    // sh1107->println(time);
-
     sh1107->print(buffer);
-
-    sh1107->print("\nLat:  ");
-    sh1107->print(String(latitude, 4));
-    sh1107->print("\nLong: ");
-    sh1107->print(String(longitude, 4));
 
     sh1107->display();
   }
-
-  Serial.println("<-Display::mainWithLatLong()");
 }
 
 

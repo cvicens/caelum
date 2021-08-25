@@ -1,25 +1,27 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GPS.h>
+//#include "Adafruit_ZeroTimer.h"
 
 #include "Display.h"
 #include "SCD41.h"
 #include "Sensors.h"
 #include "DataLogger.h"
+#include "GPSUtil.h"
 
-// what's the name of the hardware serial port?
-#define GPSSerial Serial1
+// // what's the name of the hardware serial port?
+// #define GPSSerial Serial1
 
-// Connect to the GPS on the hardware port
-Adafruit_GPS GPS(&GPSSerial);
+// // Connect to the GPS on the hardware port
+// Adafruit_GPS GPS(&GPSSerial);
 
-// Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
-// Set to 'true' if you want to debug and listen to the raw GPS sentences
-#define GPSECHO false
+// // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
+// // Set to 'true' if you want to debug and listen to the raw GPS sentences
+// #define GPSECHO false
 
 // Manual timer
 uint32_t timer = millis();
-const uint32_t PERIOD = 30000;
+const uint32_t PERIOD = 5000;
 
 // OLED Display wrapper
 Display display = Display();
@@ -33,37 +35,40 @@ Sensors sensors = Sensors();
 // Data logging
 DataLogger dataLogger = DataLogger();
 
-boolean setupGPS(uint16_t retry){
-  do {
-      // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
-      GPS.begin(9600);
-      // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
-      GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-      // uncomment this line to turn on only the "minimum recommended" data
-      //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-      // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
-      // the parser doesn't care about other sentences at this time
-      // Set the update rate
-      GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-      // For the parsing code to work nicely and have time to sort thru the data, and
-      // print it out we don't suggest using anything higher than 1 Hz
-    
-      // Request updates on antenna status, comment out to keep quiet
-      //GPS.sendCommand(PGCMD_ANTENNA);
-    
-      delay(1000);
-    
-      // Ask for firmware version
-      if (GPSSerial) {
-        GPSSerial.println(PMTK_Q_RELEASE);
-        return true;
-      }
+// GPS util
+GPSUtil gps = GPSUtil();
 
-    delay(100);
-  } while (retry--);
+// boolean setupGPS(uint16_t retry){
+//   do {
+//       // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
+//       GPS.begin(9600);
+//       // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
+//       GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+//       // uncomment this line to turn on only the "minimum recommended" data
+//       //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
+//       // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
+//       // the parser doesn't care about other sentences at this time
+//       // Set the update rate
+//       GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
+//       // For the parsing code to work nicely and have time to sort thru the data, and
+//       // print it out we don't suggest using anything higher than 1 Hz
+    
+//       // Request updates on antenna status, comment out to keep quiet
+//       //GPS.sendCommand(PGCMD_ANTENNA);
+    
+//       delay(1000);
+    
+//       // Ask for firmware version
+//       if (GPSSerial) {
+//         GPSSerial.println(PMTK_Q_RELEASE);
+//         return true;
+//       }
+
+//     delay(100);
+//   } while (retry--);
   
-  return false;
-}
+//   return false;
+// }
 
 void setup() {
   Serial.begin(115200);
@@ -95,7 +100,12 @@ void setup() {
   }
 
   // Setup GPS
-  if (setupGPS(2)) {
+  // if (setupGPS(2)) {
+  //   Serial.println("GPS OK");
+  // } else {
+  //   Serial.println("GPS KO");
+  // }
+  if (gps.init()) {
     Serial.println("GPS OK");
   } else {
     Serial.println("GPS KO");
@@ -116,47 +126,14 @@ void loop() {
   // else Serial.println("==========================");
 
   // read data from the GPS in the 'main loop'
-  char c = GPS.read();
-  // if you want to debug, this is a good time to do it!
-  // if (GPSECHO)
-  //   if (c) Serial.print(c);
-  // if a sentence is received, we can check the checksum, parse it...
-  if (GPS.newNMEAreceived()) {
-    // a tricky thing here is if we print the NMEA sentence, or data
-    // we end up not listening and catching other sentences!
-    // so be very wary if using OUTPUT_ALLDATA and trying to print out data
-    Serial.print(GPS.lastNMEA()); // this also sets the newNMEAreceived() flag to false
-    if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
-      return; // we can fail to parse a sentence in which case we should just wait for another
-  }
+  // char c = GPS.read();
+  gps.read();
 
   // approximately every PERIOD seconds or so, print out the current stats
   if (millis() - timer > PERIOD) {
-    // Read VBat
-    float vbat = sensors.readVBat();
-    Serial.print("VBAT(V): ");Serial.println(vbat);
-
-    // Read CO2 periodic measurement
-    uint16_t error;
-    char errorMessage[256];
-    uint16_t scd41Co2;
-    float scd41Temperature;
-    float scd41Humidity;
-    if (scd41.readMeasurement(scd41Co2, scd41Temperature, scd41Humidity, error, errorMessage, 256)) {
-      Serial.print("CO2: ");
-      Serial.print(scd41Co2);
-      Serial.print("\t");
-      Serial.print("Temperature: ");
-      Serial.print(scd41Temperature);
-      Serial.print("\t");
-      Serial.print("Humidity: ");
-      Serial.println(scd41Humidity);
-      display.main(scd41Co2, scd41Temperature, scd41Humidity, vbat);
-    } else {
-        Serial.println(errorMessage);
-    }
-
-    Serial.println("About to read sensors!!!");
+    // Timer and GPS
+    timer = millis(); // reset the timer
+    gps.parse();
 
     // Read Sensors
     float senseTemperature = sensors.readTemperature();
@@ -164,60 +141,50 @@ void loop() {
     float senseAltitude = sensors.readAltitude();
     uint8_t senseProximity = sensors.readProximity();
 
-    Serial.print("Temperature:");
-    Serial.print(senseTemperature);
-    Serial.print("\tTempDiff:");
-    Serial.print(scd41Temperature - senseTemperature);
-    Serial.print("\t");
-    Serial.print("Pressure:");
-    Serial.print(sensePressure);
-    Serial.print("\t");
-    Serial.print("Altitude:");
-    Serial.print(senseAltitude);
-    Serial.print("\t");
-    Serial.print("Proximity:");
-    Serial.println(senseProximity);
+    Serial.print("\nProximity: ");Serial.println(senseProximity);
+    if (senseProximity < 25) {
+      display.off();
+    } else {
+      display.on();
+    }
 
-    // Timer and GPS
-    timer = millis(); // reset the timer
+    // Read VBat
+    float vbat = sensors.readVBat();
+
+    // Read CO2 periodic measurement
+    uint16_t error = 0;
+    char errorMessage[256];
+    uint16_t scd41Co2;
+    float scd41Temperature;
+    float scd41Humidity;
+    if (scd41.readMeasurement(scd41Co2, scd41Temperature, scd41Humidity, error, errorMessage, 256)) {
+      if (!gps.fix()) {
+        display.main(scd41Co2, scd41Temperature, scd41Humidity, vbat);
+      } else {
+        display.main(scd41Co2, scd41Temperature, scd41Humidity, vbat, gps.latitude(), gps.lat(), gps.longitude(), gps.lon());
+      }
+    } else {
+        Serial.println(errorMessage);
+    }
 
     // Data logging
     char data[50];
     // CO2 (ppm), Temp (C), Hum (%)
     //sprintf (data, "CO2 (ppm): %4d Temp (C): %4.2f \nHum (%%):  %4.2f", scd41Co2, scd41Temperature, scd41Humidity);
-    sprintf (data, "%02d/%02d/%04d %02d:%02d:%02d,%d,%.2f,%.2f,%.2f,%.2f,%.2f", GPS.day, GPS.month, GPS.year, GPS.hour, GPS.minute, GPS.seconds, scd41Co2, scd41Temperature, scd41Humidity, senseTemperature, sensePressure, senseAltitude);
+    sprintf (data, "%02d/%02d/%04d %02d:%02d:%02d,%d,%.2f,%.2f,%.2f,%.2f,%.2f", gps.day(), gps.month(), gps.year(), gps.hour(), gps.minute(), gps.seconds(), scd41Co2, scd41Temperature, scd41Humidity, senseTemperature, sensePressure, senseAltitude);
     dataLogger.writeLine(data);
 
-    Serial.print("\nTime: ");
-    if (GPS.hour < 10) { Serial.print('0'); }
-    Serial.print(GPS.hour, DEC); Serial.print(':');
-    if (GPS.minute < 10) { Serial.print('0'); }
-    Serial.print(GPS.minute, DEC); Serial.print(':');
-    if (GPS.seconds < 10) { Serial.print('0'); }
-    Serial.print(GPS.seconds, DEC); Serial.print('.');
-    if (GPS.milliseconds < 10) {
-      Serial.print("00");
-    } else if (GPS.milliseconds > 9 && GPS.milliseconds < 100) {
-      Serial.print("0");
-    }
-    Serial.println(GPS.milliseconds);
-    Serial.print("Date: ");
-    Serial.print(GPS.day, DEC); Serial.print('/');
-    Serial.print(GPS.month, DEC); Serial.print("/20");
-    Serial.println(GPS.year, DEC);
-    Serial.print("Fix: "); Serial.print((int)GPS.fix);
-    Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
-    if (GPS.fix) {
+    Serial.print("Fix: "); Serial.print((int)gps.fix());
+    Serial.print(" quality: "); Serial.println((int)gps.fixquality());
+    if (gps.fix()) {
       Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
+      Serial.print(gps.latitude(), 4); Serial.print(gps.lat());
       Serial.print(", ");
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-      Serial.print("Angle: "); Serial.println(GPS.angle);
-      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
-
-      //display.mainWithLatLong(co2, temperature, humidity, GPS.latitude, GPS.longitude);
+      Serial.print(gps.longitude(), 4); Serial.println(gps.lon());
+      Serial.print("Speed (knots): "); Serial.println(gps.speed());
+      Serial.print("Angle: "); Serial.println(gps.angle());
+      Serial.print("Altitude: "); Serial.println(gps.altitude());
+      Serial.print("Satellites: "); Serial.println((int)gps.satellites());
     }
   }
 }

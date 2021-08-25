@@ -118,5 +118,16 @@ bool SCD41::readMeasurement(uint16_t& co2, float& temperature, float& humidity, 
         return false;
     }
 
+    #ifdef DEBUG
+    Serial.print("CO2: ");
+    Serial.print(co2);
+    Serial.print("\t");
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print("\t");
+    Serial.print("Humidity: ");
+    Serial.println(humidity);
+    #endif
+
     return true;
 }
