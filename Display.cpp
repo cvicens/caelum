@@ -107,8 +107,9 @@ void Display::main(uint16_t co2, float temperature, float humidity, float vbat)
 
 void Display::main(uint16_t co2, float temperature, float humidity, float vbat, float latitude, char lat, float longitude, char lon)
 {
-  char buffer[150];
-  sprintf (buffer, "CO2 (ppm): %4d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f\nLat: %f %c\nLon: %f %c", co2, temperature, humidity, vbat, latitude, lat, longitude, lon);
+  char buffer[250];
+  sprintf (buffer, "CO2 (ppm): %4d\nTemp (C): %4.2f\nHum (%%): %6.2f\nVBat(V): %6.2f\nLat: %f %s\nLon: %f %s", co2, temperature, humidity, vbat, latitude, lat, longitude, lon);
+  Serial.print(buffer);Serial.println();
 
   if (initialized && enabled) {
     sh1107->setTextSize(1);

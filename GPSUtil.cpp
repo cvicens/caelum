@@ -47,7 +47,6 @@ bool GPSUtil::init(void){
 
 bool GPSUtil::read(void){
   // Read data from the GPS => Very often!
-  
   return gps.read() != 0;
 }
 
@@ -57,7 +56,7 @@ bool GPSUtil::parse(void){
     // a tricky thing here is if we print the NMEA sentence, or data
     // we end up not listening and catching other sentences!
     // so be very wary if using OUTPUT_ALLDATA and trying to print out data
-    //Serial.print(gps.lastNMEA()); // this also sets the newNMEAreceived() flag to false
+    Serial.print(gps.lastNMEA()); // this also sets the newNMEAreceived() flag to false
 
     if (!gps.parse(gps.lastNMEA())) // this also sets the newNMEAreceived() flag to false
       return false; // we can fail to parse a sentence in which case we should just wait for another

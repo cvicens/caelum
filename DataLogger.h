@@ -13,6 +13,9 @@
 #include <SdFat.h>
 #include <Adafruit_SPIFlash.h>
 
+// Lines buffer size. To avoid writing everytime...
+#define LINES_BUFFER_SIZE 3
+
 // Max size of the logging files
 #define MAX_FILE_SIZE 25*1024
 
@@ -35,6 +38,10 @@ class DataLogger
     uint8_t index;
     // `position` points to the byte to log to
     uint32_t position;
+
+    // Lines buffer
+    int lines_buffer_index;
+    char *lines_buffer[LINES_BUFFER_SIZE];
 
   public:
     // File related libraries

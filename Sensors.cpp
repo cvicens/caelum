@@ -18,22 +18,20 @@ Sensors::Sensors()
   initialized = false;
   isAPDSReady = false;
   isBMPReady = false;
+  isLSM6DSReady = false;
 
   apds = new Adafruit_APDS9960();
   bmp = new Adafruit_BMP280();
-
-  //init(2);
+  lsm6ds33 = new Adafruit_LSM6DS33();
+  lis3mdl = new Adafruit_LIS3MDL();
 }
 
 bool Sensors::initAPDS(void){
   Serial.println("-->Sensors::initAPDS()");
   if (apds->begin()) {  
-    //gesture mode will be entered once proximity mode senses something close
+    // gesture mode will be entered once proximity mode senses something close
     apds->enableProximity(true);
     apds->enableGesture(true);
-
-    isAPDSReady = true;
-
     return true;
   }
 
@@ -43,19 +41,34 @@ bool Sensors::initAPDS(void){
 bool Sensors::initBMP(void){
   Serial.println("-->Sensors::initBMP()");
   if (bmp->begin()) {
-    isBMPReady = true;
-
     return true;
   }
+  return false;
+}
 
+bool Sensors::initLSM6DS(void){
+  Serial.println("-->Sensors::initLSM6DS()");
+  if (lsm6ds33->begin_I2C()) {
+    return true;
+  }
+  return false;
+}
+
+bool Sensors::initLIS3MDL(void){
+  Serial.println("-->Sensors::initLIS3MDL()");
+  if (lis3mdl->begin_I2C()) {
+    return true;
+  }
   return false;
 }
 
 bool Sensors::init(void){
-  initAPDS();
-  initBMP();
+  isAPDSReady = initAPDS();
+  isBMPReady = initBMP();
+  isLSM6DSReady = initLSM6DS();
+  isLIS3MDLReady = initLIS3MDL();
 
-  return isAPDSReady && isBMPReady;
+  return isAPDSReady && isBMPReady && isLSM6DSReady && isLIS3MDLReady;
 }
 
 float Sensors::readVBat(void) {
@@ -95,5 +108,57 @@ float Sensors::readAltitude(void){
     return bmp->readAltitude(1013.25);
   }
   return 9999.0;
+}
+
+void Sensors::readMagnetometer(void){
+  if (isLIS3MDLReady) {
+    lis3mdl->read();
+  }
+}
+
+float Sensors::getMagneticX(void){
+  return lis3mdl->x;
+}
+
+float Sensors::getMagneticY(void){
+  return lis3mdl->y;
+}
+
+float Sensors::getMagneticZ(void){
+  return lis3mdl->z;
+}
+
+void Sensors::readAccelerometer(void){
+  if (isLSM6DSReady) {
+    lsm6ds33->getEvent(&accel, &gyro, &temp);
+  }
+}
+
+float Sensors::getAccelX(void){
+  return accel.acceleration.x;
+}
+
+float Sensors::getAccelY(void){
+  return accel.acceleration.y;
+}
+
+float Sensors::getAccelZ(void){
+  return accel.acceleration.z;
+}
+
+float Sensors::getAccelAbs(void){
+  return sqrt(pow(accel.acceleration.x, 2) + pow(accel.acceleration.y, 2) + pow(accel.acceleration.z - 9.8, 2));
+}
+
+float Sensors::getGyroX(void){
+  return gyro.gyro.x;
+}
+
+float Sensors::getGyroY(void){
+  return gyro.gyro.y;
+}
+
+float Sensors::getGyroZ(void){
+  return gyro.gyro.z;
 }
 

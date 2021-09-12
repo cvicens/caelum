@@ -27,6 +27,8 @@ DataLogger::DataLogger()
 {
   initialized = false;
 
+  lines_buffer_index = 0;
+
   flash = Adafruit_SPIFlash(&flashTransport);
 }
 
@@ -120,17 +122,27 @@ bool DataLogger::writeLine(char* line){
       return false;
   }
 
+  // If lines buffer won't be full with this new line
+  if (lines_buffer_index + 1 < LINES_BUFFER_SIZE) {
+    // Store line in buffer and increment count
+    lines_buffer[lines_buffer_index++] = line;
+    return true;
+  }
+  // Else the buffer will be full with the new line, store it and reset count
+  lines_buffer[lines_buffer_index] = line;
+  lines_buffer_index = 0;
+
   // Calculate data file name 'data-#.csv' 
   char fileName[10];
   sprintf(fileName, "%s-%d.%s", DATA_FILE_NAME_PREFIX, index, DATA_FILE_NAME_EXTENSION);
-  Serial.print("fileName: "); Serial.print(fileName); Serial.print(" index: "); Serial.print(index); Serial.print(" position: "); Serial.println(position);
+  Serial.print("DataLogger::writeLine() fileName: "); Serial.print(fileName); Serial.print(" index: "); Serial.print(index); Serial.print(" position: "); Serial.println(position);
   // Check data file size and rotate if necessary
   if (fatfs.exists(fileName)) {
     File dataFileRead = fatfs.open(fileName, FILE_READ);
     // Check that the file opened successfully
     if (dataFileRead) {
       // If size if bigger than MAX we have to rotate to the next file
-      Serial.print("DataLogger::writeLine() File size: ");Serial.println(dataFileRead.size());
+      Serial.print("DataLogger::writeLine() START File size: ");Serial.println(dataFileRead.size());
       if (dataFileRead.size() + strlen(line) >= MAX_FILE_SIZE) {
         if (!rotate()) {
           Serial.println("DataLogger::writeLine() error while rotating!");
@@ -145,7 +157,10 @@ bool DataLogger::writeLine(char* line){
   File dataFileWrite = fatfs.open(fileName, FILE_WRITE_START);
   if (dataFileWrite) {
     dataFileWrite.seek(position);
-    position += dataFileWrite.println(line);
+    for(int i = 0; i < LINES_BUFFER_SIZE; i++) {
+      size_t inc = dataFileWrite.println(line);
+      position += inc;
+    }
     dataFileWrite.close();
     updateControlFile(index, position);
     Serial.println("DataLogger::Wrote new measurement to data file!");

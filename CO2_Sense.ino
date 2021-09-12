@@ -1,13 +1,17 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GPS.h>
-//#include "Adafruit_ZeroTimer.h"
+#include <Adafruit_NeoPixel.h>
 
 #include "Display.h"
 #include "SCD41.h"
 #include "Sensors.h"
 #include "DataLogger.h"
 #include "GPSUtil.h"
+
+#include <stdbool.h>
+#include "nrf.h"
+#include "nrf_gpio.h"
 
 // // what's the name of the hardware serial port?
 // #define GPSSerial Serial1
@@ -38,37 +42,51 @@ DataLogger dataLogger = DataLogger();
 // GPS util
 GPSUtil gps = GPSUtil();
 
-// boolean setupGPS(uint16_t retry){
-//   do {
-//       // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
-//       GPS.begin(9600);
-//       // uncomment this line to turn on RMC (recommended minimum) and GGA (fix data) including altitude
-//       GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-//       // uncomment this line to turn on only the "minimum recommended" data
-//       //GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCONLY);
-//       // For parsing data, we don't suggest using anything but either RMC only or RMC+GGA since
-//       // the parser doesn't care about other sentences at this time
-//       // Set the update rate
-//       GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
-//       // For the parsing code to work nicely and have time to sort thru the data, and
-//       // print it out we don't suggest using anything higher than 1 Hz
-    
-//       // Request updates on antenna status, comment out to keep quiet
-//       //GPS.sendCommand(PGCMD_ANTENNA);
-    
-//       delay(1000);
-    
-//       // Ask for firmware version
-//       if (GPSSerial) {
-//         GPSSerial.println(PMTK_Q_RELEASE);
-//         return true;
-//       }
+// NeoPixel
+#define PIN PIN_NEOPIXEL
+#define NEOPIXEL_BRIGHTNESS 5
+Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);;
 
-//     delay(100);
-//   } while (retry--);
-  
-//   return false;
-// }
+
+void start_timer(void)
+{		
+  NRF_TIMER2->MODE = TIMER_MODE_MODE_Timer;  // Set the timer in Counter Mode
+  NRF_TIMER2->TASKS_CLEAR = 1;               // clear the task first to be usable for later
+	NRF_TIMER2->PRESCALER = 160;                             //Set prescaler. Higher number gives slower timer. Prescaler = 0 gives 16MHz timer
+	NRF_TIMER2->BITMODE = TIMER_BITMODE_BITMODE_16Bit;		 //Set counter to 16 bit resolution
+	NRF_TIMER2->CC[0] = 25000;                             //Set value for TIMER2 compare register 0
+	NRF_TIMER2->CC[1] = 5;                                 //Set value for TIMER2 compare register 1
+		
+  // Enable interrupt on Timer 2, both for CC[0] and CC[1] compare match events
+	NRF_TIMER2->INTENSET = (TIMER_INTENSET_COMPARE0_Enabled << TIMER_INTENSET_COMPARE0_Pos) | (TIMER_INTENSET_COMPARE1_Enabled << TIMER_INTENSET_COMPARE1_Pos);
+  NVIC_EnableIRQ(TIMER2_IRQn);
+		
+  NRF_TIMER2->TASKS_START = 1;               // Start TIMER2
+}
+		
+/** TIMTER2 peripheral interrupt handler. This interrupt handler is called whenever there it a TIMER2 interrupt
+ */
+void TIMER2_IRQHandler(void)
+{
+  Serial.println("TIMER2_IRQHandler");
+	if ((NRF_TIMER2->EVENTS_COMPARE[0] != 0) && ((NRF_TIMER2->INTENSET & TIMER_INTENSET_COMPARE0_Msk) != 0))
+  {
+		NRF_TIMER2->EVENTS_COMPARE[0] = 0;           //Clear compare register 0 event	
+		//nrf_gpio_pin_set(GPIO_TOGGLE_PIN);           //Set LED
+    digitalWrite(LED_BUILTIN, HIGH);
+    //digitalToggle(LED_BUILTIN); // turn the LED on (HIGH is the voltage level)
+    Serial.println("ON");
+
+  }
+	
+	if ((NRF_TIMER2->EVENTS_COMPARE[1] != 0) && ((NRF_TIMER2->INTENSET & TIMER_INTENSET_COMPARE1_Msk) != 0))
+  {
+		NRF_TIMER2->EVENTS_COMPARE[1] = 0;           //Clear compare register 1 event
+		//nrf_gpio_pin_clear(GPIO_TOGGLE_PIN);         //Clear LED
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("ON");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -111,6 +129,14 @@ void setup() {
     Serial.println("GPS KO");
   }
 
+  // Config Neopixels
+  neopixel.begin();
+  neopixel.clear();
+  neopixel.setBrightness(NEOPIXEL_BRIGHTNESS);
+  neopixel.show(); // Update the pixel state
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  //start_timer();
 }
 
 void loop() {
@@ -140,12 +166,19 @@ void loop() {
     float sensePressure = sensors.readPressure();
     float senseAltitude = sensors.readAltitude();
     uint8_t senseProximity = sensors.readProximity();
+    
+    sensors.readMagnetometer();
+    sensors.readAccelerometer();
 
-    Serial.print("\nProximity: ");Serial.println(senseProximity);
-    if (senseProximity < 25) {
+    Serial.print("\nAccelAbs: ");Serial.print(sensors.getAccelAbs());;Serial.println();
+    if (sensors.getAccelAbs() < ACCEL_ABS_THRESHOLD) {
       display.off();
+      neopixel.clear();
+      neopixel.show();
     } else {
       display.on();
+      //neopixel.setBrightness(5);   // Affects all subsequent settings
+      neopixel.show();
     }
 
     // Read VBat
@@ -167,6 +200,9 @@ void loop() {
         Serial.println(errorMessage);
     }
 
+    // Color code
+    neopixel.setPixelColor(0, SCD41::getColor(scd41Co2));
+
     // Data logging
     char data[50];
     // CO2 (ppm), Temp (C), Hum (%)
@@ -186,5 +222,17 @@ void loop() {
       Serial.print("Altitude: "); Serial.println(gps.altitude());
       Serial.print("Satellites: "); Serial.println((int)gps.satellites());
     }
+
+    Serial.print("AccelX: ");Serial.println(sensors.getAccelX());
+    Serial.print("AccelY: ");Serial.println(sensors.getAccelY());
+    Serial.print("AccelZ: ");Serial.println(sensors.getAccelZ());
+
+    Serial.print("GyroX: ");Serial.println(sensors.getGyroX());
+    Serial.print("GyroX: ");Serial.println(sensors.getGyroY());
+    Serial.print("GyroX: ");Serial.println(sensors.getGyroZ());
+    
+    Serial.print("MagneticX: ");Serial.println(sensors.getMagneticX());
+    Serial.print("MagneticY: ");Serial.println(sensors.getMagneticY());
+    Serial.print("MagneticZ: ");Serial.println(sensors.getMagneticZ());
   }
 }

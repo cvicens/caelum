@@ -20,6 +20,25 @@ SCD41::SCD41()
   //init();
 }
 
+SCD41::~SCD41() {
+}
+
+uint32_t SCD41::getColor(float co2) {
+    uint8_t r, g, b;
+    
+    if (co2 < 500) {
+        r = 0; g = 0; b = 255;
+    } else if (co2 < 800) {
+        r = 0; g = 255; b = 0;
+    } else if (co2 < 1000) {
+        r = 255; g = 102; b = 0;
+    } else if (co2 < 1500) {
+        r = 255; g = 0; b = 0;
+    }
+
+    return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+}
+
 void SCD41::print(int value, int base) {
     if (Serial) Serial.print(value, base);
 }

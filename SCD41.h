@@ -33,10 +33,12 @@ class SCD41
 
   public:
     SCD41(void);
+    ~SCD41(void);
+
+    static uint32_t getColor(float co2);
 
     bool init(void);
     bool readMeasurement(uint16_t& co2, float& temperature, float& humidity, uint16_t& error, char errorMessage[], size_t errorMessageSize);
-
 };
 
 #endif
