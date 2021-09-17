@@ -13,16 +13,6 @@
 #include "nrf.h"
 #include "nrf_gpio.h"
 
-// // what's the name of the hardware serial port?
-// #define GPSSerial Serial1
-
-// // Connect to the GPS on the hardware port
-// Adafruit_GPS GPS(&GPSSerial);
-
-// // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
-// // Set to 'true' if you want to debug and listen to the raw GPS sentences
-// #define GPSECHO false
-
 // Manual timer
 uint32_t timer = millis();
 const uint32_t PERIOD = 5000;
@@ -46,7 +36,6 @@ GPSUtil gps = GPSUtil();
 #define PIN PIN_NEOPIXEL
 #define NEOPIXEL_BRIGHTNESS 5
 Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);;
-
 
 void start_timer(void)
 {		
@@ -117,12 +106,6 @@ void setup() {
     Serial.println("DATA_LOGGING KO");
   }
 
-  // Setup GPS
-  // if (setupGPS(2)) {
-  //   Serial.println("GPS OK");
-  // } else {
-  //   Serial.println("GPS KO");
-  // }
   if (gps.init()) {
     Serial.println("GPS OK");
   } else {
@@ -140,16 +123,9 @@ void setup() {
 }
 
 void loop() {
-  delay(10);
+  //delay(10);
 
   yield();
-
-  // uint8_t gesture = sensors.readGesture();
-  // if(gesture == APDS9960_DOWN) Serial.println("APDS9960_DOWN");
-  // else if(gesture == APDS9960_UP) Serial.println("APDS9960_UP");
-  // else if(gesture == APDS9960_LEFT) Serial.println("APDS9960_LEFT");
-  // else if(gesture == APDS9960_RIGHT) Serial.println("APDS9960_RIGHT");
-  // else Serial.println("==========================");
 
   // read data from the GPS in the 'main loop'
   // char c = GPS.read();
@@ -157,6 +133,10 @@ void loop() {
 
   // approximately every PERIOD seconds or so, print out the current stats
   if (millis() - timer > PERIOD) {
+    if (!gps.isInit()) {
+      gps.init();
+    }
+
     // Timer and GPS
     timer = millis(); // reset the timer
     gps.parse();
@@ -177,7 +157,6 @@ void loop() {
       neopixel.show();
     } else {
       display.on();
-      //neopixel.setBrightness(5);   // Affects all subsequent settings
       neopixel.show();
     }
 
@@ -210,29 +189,7 @@ void loop() {
     sprintf (data, "%02d/%02d/%04d %02d:%02d:%02d,%d,%.2f,%.2f,%.2f,%.2f,%.2f", gps.day(), gps.month(), gps.year(), gps.hour(), gps.minute(), gps.seconds(), scd41Co2, scd41Temperature, scd41Humidity, senseTemperature, sensePressure, senseAltitude);
     dataLogger.writeLine(data);
 
-    Serial.print("Fix: "); Serial.print((int)gps.fix());
-    Serial.print(" quality: "); Serial.println((int)gps.fixquality());
-    if (gps.fix()) {
-      Serial.print("Location: ");
-      Serial.print(gps.latitude(), 4); Serial.print(gps.lat());
-      Serial.print(", ");
-      Serial.print(gps.longitude(), 4); Serial.println(gps.lon());
-      Serial.print("Speed (knots): "); Serial.println(gps.speed());
-      Serial.print("Angle: "); Serial.println(gps.angle());
-      Serial.print("Altitude: "); Serial.println(gps.altitude());
-      Serial.print("Satellites: "); Serial.println((int)gps.satellites());
-    }
-
-    Serial.print("AccelX: ");Serial.println(sensors.getAccelX());
-    Serial.print("AccelY: ");Serial.println(sensors.getAccelY());
-    Serial.print("AccelZ: ");Serial.println(sensors.getAccelZ());
-
-    Serial.print("GyroX: ");Serial.println(sensors.getGyroX());
-    Serial.print("GyroX: ");Serial.println(sensors.getGyroY());
-    Serial.print("GyroX: ");Serial.println(sensors.getGyroZ());
-    
-    Serial.print("MagneticX: ");Serial.println(sensors.getMagneticX());
-    Serial.print("MagneticY: ");Serial.println(sensors.getMagneticY());
-    Serial.print("MagneticZ: ");Serial.println(sensors.getMagneticZ());
+    gps.debug();
+    sensors.debug();
   }
 }

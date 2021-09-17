@@ -68,7 +68,9 @@ bool Sensors::init(void){
   isLSM6DSReady = initLSM6DS();
   isLIS3MDLReady = initLIS3MDL();
 
-  return isAPDSReady && isBMPReady && isLSM6DSReady && isLIS3MDLReady;
+  initialized = isAPDSReady && isBMPReady && isLSM6DSReady && isLIS3MDLReady;
+
+  return initialized;
 }
 
 float Sensors::readVBat(void) {
@@ -162,3 +164,21 @@ float Sensors::getGyroZ(void){
   return gyro.gyro.z;
 }
 
+void Sensors::debug(void){
+  if (!initialized){
+      Serial.println("GPSUtil::Sensors(void) run .init()");
+      return;
+  }
+
+  Serial.print("AccelX: ");Serial.println(getAccelX());
+  Serial.print("AccelY: ");Serial.println(getAccelY());
+  Serial.print("AccelZ: ");Serial.println(getAccelZ());
+
+  Serial.print("GyroX: ");Serial.println(getGyroX());
+  Serial.print("GyroX: ");Serial.println(getGyroY());
+  Serial.print("GyroX: ");Serial.println(getGyroZ());
+  
+  Serial.print("MagneticX: ");Serial.println(getMagneticX());
+  Serial.print("MagneticY: ");Serial.println(getMagneticY());
+  Serial.print("MagneticZ: ");Serial.println(getMagneticZ());
+}

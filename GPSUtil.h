@@ -35,8 +35,11 @@ class GPSUtil
     GPSUtil(void);
 
     bool init(void);
+    bool isInit(void);
     bool read(void);
     bool parse(void);
+    
+    void debug(void);
 
     uint8_t day(void);
     uint8_t month(void);

@@ -66,6 +66,8 @@ class Sensors
     float getGyroX(void);
     float getGyroY(void);
     float getGyroZ(void);
+
+    void debug(void);
 };
 
 #endif
