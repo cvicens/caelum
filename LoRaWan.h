@@ -12,18 +12,27 @@
 #include <arduino_lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+#include <memory>
+
+#include "Sensor.h"
 
 class LoRaWan
 {
   private:
-    bool initialized;
+    void send(osjob_t* j);
 
   public:
-    LoRaWan(void);
+    static bool initialized;
+    static std::unique_ptr<Sensor> *sensor;
+    static uint8_t numSensors;
 
-    bool init(void);
-    bool isInit(void);
-    void runLoopOnce(void);
+
+    // static bool init(std::unique_ptr<Sensor> *sensor, uint8_t numSensors);
+    static bool init(void);
+    static inline bool isInitialized(void) {
+      return initialized;
+    }
+    static void runLoopOnce(void);
     
 };
 

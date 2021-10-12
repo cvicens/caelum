@@ -15,12 +15,14 @@ void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
 static const u1_t PROGMEM DEVEUI[8] = { 0x14, 0xAB, 0x10, 0x00, 0x00, 0xB6, 0x76, 0x96 };
+// static const u1_t PROGMEM DEVEUI[8] = { 0x4A, 0x62, 0x04, 0xD0, 0x7E, 0xD5, 0xB3, 0x70 };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
 // practice, a key taken from the TTN console can be copied as-is.
-static const u1_t PROGMEM APPKEY[16] = { 0x56, 0x60, 0x75, 0x64, 0x2E, 0x7D, 0x9C, 0x63, 0x2D, 0x0C, 0x4E, 0xB7, 0x46, 0x7B, 0xC9, 0xDA };
+static const u1_t PROGMEM APPKEY[16] = { 0x67, 0x09, 0x46, 0x1E, 0x33, 0x2B, 0xB5, 0xDB, 0x55, 0x45, 0xB7, 0x71, 0x5E, 0xDF, 0x94, 0xE5 };
+// static const u1_t PROGMEM APPKEY[16] = { 0xBA, 0xE1, 0x46, 0x53, 0x2C, 0xB1, 0x73, 0x4B, 0xAF, 0x83, 0x6C, 0xD8, 0x30, 0x7F, 0xD8, 0x51 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 // payload to send to TTN gateway
@@ -56,6 +58,18 @@ void do_send(osjob_t* j){
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
+        Serial.print("SIZE ");Serial.println(LoRaWan::numSensors);
+        for (int i = 0; i < LoRaWan::numSensors; i++) {
+            Serial.print("i ");Serial.println(i);
+            if (LoRaWan::sensor[i]->read() && LoRaWan::sensor[i]->isValid()) {
+                uint8_t *_payload = LoRaWan::sensor[i]->uplinkPayload();
+                Serial.print("UPLINK ");Serial.println(LoRaWan::sensor[i]->getName());
+            } else {
+                Serial.println("DATA NOT VALID FOR "); Serial.println(LoRaWan::sensor[i]->getName());
+            }  
+        }
+
+
         // read the temperature from the DHT22
         float temperature = 10.0;
         Serial.print("Temperature: "); Serial.print(temperature);
@@ -152,7 +166,7 @@ void onEvent (ev_t ev) {
             }
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
-      // size, we don't use it in this example.
+            // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
         /*
@@ -226,34 +240,51 @@ void onEvent (ev_t ev) {
     }
 }
 
-
-
-LoRaWan::LoRaWan()
-{
-  initialized = false;
-}
+// LoRaWan::LoRaWan(void)
+// {
+//     this->initialized = false;
+//     this->sensor = sensor;
+//     this->numSensors = numSensors;
+// }
 
 bool LoRaWan::init(void){
-  // LMIC init
-  os_init();
-  // Reset the MAC state. Session and pending data transfers will be discarded.
-  LMIC_reset();
-  // Disable link-check mode and ADR, because ADR tends to complicate testing.
-  LMIC_setLinkCheckMode(0);
-  // Set the data rate to Spreading Factor 7.  This is the fastest supported rate for 125 kHz channels, and it
-  // minimizes air time and battery power. Set the transmission power to 14 dBi (25 mW).
-  LMIC_setDrTxpow(DR_SF7,14);
-  // in the US, with TTN, it saves join time if we start on subband 1 (channels 8-15). This will
-  // get overridden after the join by parameters from the network. If working with other
-  // networks or in other regions, this will need to be changed.
-  //LMIC_selectSubBand(1);
+    LoRaWan::initialized = false;
+    LoRaWan::sensor = sensor;
+    LoRaWan::numSensors = numSensors;
 
-  // Start job (sending automatically starts OTAA too)
-  do_send(&sendjob);
+    // LMIC init
+     os_init();
+     // Reset the MAC state. Session and pending data transfers will be discarded.
+     LMIC_reset();    
+     LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
+    //  LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band 
+    //  LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band 
 
-  return false;
+     LMIC_setLinkCheckMode(0); 
+    //  LMIC.dn2Dr = SF9; 
+    //  LMIC_setDrTxpow(DR_SF7,14);
+
+    // Start job (sending automatically starts OTAA too)
+    do_send(&sendjob);
+
+    LoRaWan::initialized = true;
+
+    return true;
 }
 
-bool LoRaWan::isInit(void){
-  return initialized;
+void LoRaWan::runLoopOnce(void){
+    // we call the LMIC's runloop processor. This will cause things to happen based on events and time. One
+    // of the things that will happen is callbacks for transmission complete or received messages. We also
+    // use this loop to queue periodic data transmissions.  You can put other things here in the `loop()` routine,
+    // but beware that LoRaWAN timing is pretty tight, so if you do more than a few milliseconds of work, you
+    // will want to call `os_runloop_once()` every so often, to keep the radio running.
+    os_runloop_once();
 }
+

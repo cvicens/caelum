@@ -8,61 +8,78 @@
 
 #include <SensirionI2CScd4x.h>
 #include <Wire.h>
+#include <arduino_lmic.h>
 
 #include "SCD41.h"
 
 SCD41::SCD41()
+    : Sensor("SCD41")
 {
-  startTimeMillis = millis();
-  initialized = false;
-  scd4x = SensirionI2CScd4x();
-
-  //init();
+    startTimeMillis = millis();
+    scd4x = SensirionI2CScd4x();
 }
 
-SCD41::~SCD41() {
-}
+SCD41::~SCD41() { }
 
-uint32_t SCD41::getColor(float co2) {
+uint32_t SCD41::getColor(float co2)
+{
     uint8_t r, g, b;
-    
+
     if (co2 < 500) {
-        r = 0; g = 0; b = 255;
+        r = 0;
+        g = 0;
+        b = 255;
     } else if (co2 < 800) {
-        r = 0; g = 255; b = 0;
+        r = 0;
+        g = 255;
+        b = 0;
     } else if (co2 < 1000) {
-        r = 255; g = 102; b = 0;
+        r = 255;
+        g = 102;
+        b = 0;
     } else if (co2 < 1500) {
-        r = 255; g = 0; b = 0;
+        r = 255;
+        g = 0;
+        b = 0;
     }
 
-    return ((uint32_t)r << 16) | ((uint32_t)g <<  8) | b;
+    return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
 }
 
-void SCD41::print(int value, int base) {
-    if (Serial) Serial.print(value, base);
+void SCD41::print(int value, int base)
+{
+    if (Serial)
+        Serial.print(value, base);
 }
 
-void SCD41::print(const char* str) {
-    if (Serial) Serial.print(str);
+void SCD41::print(const char* str)
+{
+    if (Serial)
+        Serial.print(str);
 }
 
-void SCD41::println(void) {
-    if (Serial) Serial.println();
+void SCD41::println(void)
+{
+    if (Serial)
+        Serial.println();
 }
 
-void SCD41::println(const char* str) {
-    if (Serial) Serial.println(str);
+void SCD41::println(const char* str)
+{
+    if (Serial)
+        Serial.println(str);
 }
 
-void SCD41::printUint16Hex(uint16_t value) {
+void SCD41::printUint16Hex(uint16_t value)
+{
     print(value < 4096 ? "0" : "");
     print(value < 256 ? "0" : "");
     print(value < 16 ? "0" : "");
     print(value, HEX);
 }
 
-void SCD41::printSerialNumber(uint16_t serial0, uint16_t serial1, uint16_t serial2) {
+void SCD41::printSerialNumber(uint16_t serial0, uint16_t serial1, uint16_t serial2)
+{
     print("Serial: 0x");
     printUint16Hex(serial0);
     printUint16Hex(serial1);
@@ -70,7 +87,8 @@ void SCD41::printSerialNumber(uint16_t serial0, uint16_t serial1, uint16_t seria
     println();
 }
 
-bool SCD41::init(void){
+bool SCD41::init(void)
+{
     Wire.begin();
 
     uint16_t error;
@@ -119,11 +137,26 @@ bool SCD41::init(void){
         Serial.print("No wait needed time elapsed (ms)... ");
         Serial.println(elapsedTimeMillis);
     }
-    
-    return true;
+
+    return initialized = true;
 }
 
-bool SCD41::readMeasurement(uint16_t& co2, float& temperature, float& humidity, uint16_t& error, char errorMessage[], size_t errorMessageSize){
+bool SCD41::read(void)
+{
+    if (this->readMeasurement(
+            this->co2, this->temperature, this->humidity, this->error, this->errorMessage, sizeof(errorMessage))) {
+        this->valid = true;
+    } else {
+        this->valid = false;
+        Serial.println(errorMessage);
+    }
+
+    return this->valid;
+}
+
+bool SCD41::readMeasurement(
+    uint16_t& co2, float& temperature, float& humidity, uint16_t& error, char errorMessage[], size_t errorMessageSize)
+{
     // Read Measurement
     error = scd4x.readMeasurement(co2, temperature, humidity);
     if (error) {
@@ -137,7 +170,40 @@ bool SCD41::readMeasurement(uint16_t& co2, float& temperature, float& humidity, 
         return false;
     }
 
-    #ifdef DEBUG
+    return true;
+}
+
+uint8_t* SCD41::uplinkPayload(void)
+{
+    static uint8_t payload[PAYLOAD_SIZE];
+
+    // int -> int
+    // place the bytes into the payload
+    payload[0] = lowByte(co2);
+    payload[1] = highByte(co2);
+
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintTemp = LMIC_f2sflt16(temperature);
+    // place the bytes into the payload
+    payload[2] = lowByte(uintTemp);
+    payload[3] = highByte(uintTemp);
+
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t unitHumidity = LMIC_f2sflt16(humidity);
+    // place the bytes into the payload
+    payload[4] = lowByte(unitHumidity);
+    payload[5] = highByte(unitHumidity);
+
+    return payload;
+}
+
+void SCD41::debug(void)
+{
+    if (!initialized) {
+        Serial.println("SCD41::debug(void) run .init()");
+        return;
+    }
+
     Serial.print("CO2: ");
     Serial.print(co2);
     Serial.print("\t");
@@ -146,7 +212,14 @@ bool SCD41::readMeasurement(uint16_t& co2, float& temperature, float& humidity, 
     Serial.print("\t");
     Serial.print("Humidity: ");
     Serial.println(humidity);
-    #endif
-
-    return true;
 }
+
+uint16_t SCD41::getCO2(void) { return this->co2; }
+
+float SCD41::getTemperature(void) { return this->temperature; }
+
+float SCD41::getHumidity(void) { return this->humidity; }
+
+uint16_t SCD41::getError(void) { return this->error; }
+
+char* SCD41::getErrorMessage(void) { return this->errorMessage; }
