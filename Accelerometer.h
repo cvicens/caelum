@@ -13,7 +13,7 @@
 
 #include <Adafruit_LSM6DS33.h>
 
-#define PAYLOAD_SIZE 10
+#define PAYLOAD_SIZE 2
 #define ACCEL_ABS_THRESHOLD 1.5
 
 class Accelerometer : public Sensor

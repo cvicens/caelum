@@ -13,7 +13,7 @@
 #include "SCD41.h"
 
 SCD41::SCD41()
-    : Sensor("SCD41")
+    : Sensor("SCD41", PAYLOAD_SIZE)
 {
     startTimeMillis = millis();
     scd4x = SensirionI2CScd4x();
@@ -175,26 +175,26 @@ bool SCD41::readMeasurement(
 
 uint8_t* SCD41::uplinkPayload(void)
 {
-    static uint8_t payload[PAYLOAD_SIZE];
+    //static uint8_t payload[PAYLOAD_SIZE];
 
     // int -> int
     // place the bytes into the payload
-    payload[0] = lowByte(co2);
-    payload[1] = highByte(co2);
+    this->payload[0] = lowByte(co2);
+    this->payload[1] = highByte(co2);
 
     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
-    uint16_t uintTemp = LMIC_f2sflt16(temperature);
+    uint16_t uintTemp = Sensor::sf2u16(temperature);
     // place the bytes into the payload
-    payload[2] = lowByte(uintTemp);
-    payload[3] = highByte(uintTemp);
+    this->payload[2] = lowByte(uintTemp);  // INTEGER
+    this->payload[3] = highByte(uintTemp); // DECIMAL
 
     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
-    uint16_t unitHumidity = LMIC_f2sflt16(humidity);
+    uint16_t unitHumidity = Sensor::sf2u16(humidity);
     // place the bytes into the payload
-    payload[4] = lowByte(unitHumidity);
-    payload[5] = highByte(unitHumidity);
+    this->payload[4] = lowByte(unitHumidity);
+    this->payload[5] = highByte(unitHumidity);
 
-    return payload;
+    return this->payload;
 }
 
 void SCD41::debug(void)

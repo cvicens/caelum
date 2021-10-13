@@ -63,9 +63,9 @@ Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, PIN_NEOPIXEL, NEO_GRB + NEO_KH
 std::unique_ptr<Sensor> sensors[] = { 
   std::unique_ptr<SCD41>(&scd41),                 // CO2
   std::unique_ptr<Accelerometer>(&accelerometer), // Accelerometer
-  std::unique_ptr<Magnetometer>(&magnetometer),   // Magnetometer
+  // std::unique_ptr<Magnetometer>(&magnetometer),   // Magnetometer
   std::unique_ptr<Battery>(&battery),             // Battery
-  std::unique_ptr<BMP280>(&bmp280),               // BMP280
+  // std::unique_ptr<BMP280>(&bmp280),               // BMP280
 };
 
 // Lora

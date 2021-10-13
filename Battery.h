@@ -19,7 +19,7 @@ class Battery : public Sensor
     float vBat {0.0};
 
   public:
-    Battery(void) : Sensor("BATTERY") {}
+    Battery(void) : Sensor("BATTERY", PAYLOAD_SIZE) {}
 
     bool init(void);
     bool read(void);

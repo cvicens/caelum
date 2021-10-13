@@ -29,16 +29,16 @@ bool Battery::read(void)
 }
 
 uint8_t* Battery::uplinkPayload(void){
-  static uint8_t payload[PAYLOAD_SIZE];
+  // static uint8_t payload[PAYLOAD_SIZE];
 
   // float -> int
   // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
-  uint16_t payloadVBat = LMIC_f2sflt16(this->vBat);
+  uint16_t payloadVBat = Sensor::sf2u16(this->vBat);
   // place the bytes into the payload
-  payload[0] = lowByte(payloadVBat);
-  payload[1] = highByte(payloadVBat);
+  this->payload[0] = lowByte(payloadVBat);
+  this->payload[1] = highByte(payloadVBat);
 
-  return payload;
+  return this->payload;
 }
 
 float Battery::getVBat(void) {

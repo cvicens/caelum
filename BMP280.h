@@ -12,7 +12,7 @@
 
 #include "Sensor.h"
 
-#define PAYLOAD_SIZE 10
+#define PAYLOAD_SIZE 6
 
 class BMP280 : public Sensor
 {

@@ -6,11 +6,12 @@
 
 #include "Arduino.h"
 #include <Wire.h>
+#include <arduino_lmic.h>
 
 #include "Magnetometer.h"
 
 Magnetometer::Magnetometer()
-    : Sensor("MAGNETOMETER")
+    : Sensor("MAGNETOMETER", PAYLOAD_SIZE)
 {
     lis3mdl = new Adafruit_LIS3MDL();
 }
@@ -40,11 +41,27 @@ bool Magnetometer::read(void)
 
 uint8_t* Magnetometer::uplinkPayload(void)
 {
-    static uint8_t payload[PAYLOAD_SIZE];
+    // static uint8_t payload[PAYLOAD_SIZE];
 
-    // TODO
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintMagX = LMIC_f2sflt16(this->magneticX);
+    // place the bytes into the payload
+    this->payload[0] = lowByte(uintMagX);
+    this->payload[1] = highByte(uintMagX);
 
-    return payload;
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintMagY = LMIC_f2sflt16(this->magneticY);
+    // place the bytes into the payload
+    this->payload[2] = lowByte(uintMagY);
+    this->payload[3] = highByte(uintMagY);
+
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintMagZ = LMIC_f2sflt16(this->magneticZ);
+    // place the bytes into the payload
+    this->payload[4] = lowByte(uintMagZ);
+    this->payload[5] = highByte(uintMagZ);
+
+    return this->payload;
 }
 
 float Magnetometer::getMagneticX(void) { return lis3mdl->x; }

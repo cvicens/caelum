@@ -12,7 +12,7 @@
 
 #include "Sensor.h"
 
-#define PAYLOAD_SIZE 10
+#define PAYLOAD_SIZE 2
 
 class APDS9960 : public Sensor {
 private:

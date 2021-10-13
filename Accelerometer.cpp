@@ -6,11 +6,12 @@
 
 #include "Arduino.h"
 #include <Wire.h>
+#include <arduino_lmic.h>
 
 #include "Accelerometer.h"
 
 Accelerometer::Accelerometer()
-    : Sensor("ACCELEROMETER")
+    : Sensor("ACCELEROMETER", PAYLOAD_SIZE)
 {
     lsm6ds33 = new Adafruit_LSM6DS33();
 }
@@ -63,12 +64,59 @@ float Accelerometer::getGyroZ(void) { return this->gyroZ; }
 
 uint8_t* Accelerometer::uplinkPayload(void)
 {
-    static uint8_t payload[PAYLOAD_SIZE];
+    // static uint8_t payload[PAYLOAD_SIZE];
 
-    // TODO
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintAccAbs = Sensor::sf2u16(this->getAccelAbs());
+    // place the bytes into the payload
+    this->payload[0] = lowByte(uintAccAbs);
+    this->payload[1] = highByte(uintAccAbs);
 
-    return payload;
+    return this->payload;
 }
+
+// uint8_t* Accelerometer::uplinkPayload(void)
+// {
+//     // static uint8_t payload[PAYLOAD_SIZE];
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintAccX = LMIC_f2sflt16(this->accelerationX);
+//     // place the bytes into the payload
+//     this->payload[0] = lowByte(uintAccX);
+//     this->payload[1] = highByte(uintAccX);
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintAccY = LMIC_f2sflt16(this->accelerationY);
+//     // place the bytes into the payload
+//     this->payload[2] = lowByte(uintAccY);
+//     this->payload[3] = highByte(uintAccY);
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintAccZ = LMIC_f2sflt16(this->accelerationZ);
+//     // place the bytes into the payload
+//     this->payload[4] = lowByte(uintAccZ);
+//     this->payload[5] = highByte(uintAccZ);
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintGyrX = LMIC_f2sflt16(this->gyroX);
+//     // place the bytes into the payload
+//     this->payload[6] = lowByte(uintGyrX);
+//     this->payload[7] = highByte(uintGyrX);
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintGyrY = LMIC_f2sflt16(this->gyroY);
+//     // place the bytes into the payload
+//     this->payload[8] = lowByte(uintGyrY);
+//     this->payload[9] = highByte(uintGyrY);
+
+//     // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+//     uint16_t uintGyrZ = LMIC_f2sflt16(this->gyroZ);
+//     // place the bytes into the payload
+//     this->payload[10] = lowByte(uintGyrZ);
+//     this->payload[11] = highByte(uintGyrZ);
+
+//     return this->payload;
+// }
 
 void Accelerometer::debug(void)
 {

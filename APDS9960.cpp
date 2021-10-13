@@ -5,11 +5,12 @@
 */
 
 #include <Wire.h>
+#include <arduino_lmic.h>
 
 #include "APDS9960.h"
 
 APDS9960::APDS9960()
-    : Sensor("APDS9960")
+    : Sensor("APDS9960", PAYLOAD_SIZE)
 {
     apds = new Adafruit_APDS9960();
 }
@@ -42,11 +43,14 @@ bool APDS9960::read(void)
 
 uint8_t* APDS9960::uplinkPayload(void)
 {
-    static uint8_t payload[PAYLOAD_SIZE];
+    // static uint8_t payload[PAYLOAD_SIZE];
 
-    // TODO
+    // int -> int
+    // place the bytes into the payload
+    this->payload[0] = this->gesture;
+    this->payload[1] = this->proximity;
 
-    return payload;
+    return this->payload;
 }
 
 void APDS9960::debug(void)

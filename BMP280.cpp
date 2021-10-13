@@ -5,11 +5,12 @@
 */
 
 #include <Wire.h>
+#include <arduino_lmic.h>
 
 #include "BMP280.h"
 
 BMP280::BMP280()
-    : Sensor("BMP280")
+    : Sensor("BMP280", PAYLOAD_SIZE)
 {
     bmp = new Adafruit_BMP280();
 }
@@ -40,11 +41,27 @@ bool BMP280::read(void)
 
 uint8_t* BMP280::uplinkPayload(void)
 {
-    static uint8_t payload[PAYLOAD_SIZE];
+    // static uint8_t payload[PAYLOAD_SIZE];
 
-    // TODO
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintTemp = LMIC_f2sflt16(this->temperature);
+    // place the bytes into the payload
+    this->payload[0] = lowByte(uintTemp);
+    this->payload[1] = highByte(uintTemp);
 
-    return payload;
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintPress = LMIC_f2sflt16(this->pressure);
+    // place the bytes into the payload
+    this->payload[2] = lowByte(uintPress);
+    this->payload[3] = highByte(uintPress);
+
+    // note: this uses the sflt16 datum (https://github.com/mcci-catena/arduino-lmic#sflt16)
+    uint16_t uintAlt = LMIC_f2sflt16(this->altitude);
+    // place the bytes into the payload
+    this->payload[4] = lowByte(uintAlt);
+    this->payload[5] = highByte(uintAlt);
+
+    return this->payload;
 }
 
 void BMP280::debug(void)
