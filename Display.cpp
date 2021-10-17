@@ -39,7 +39,6 @@ bool Display::init(uint16_t retry){
     
       sh1107->setRotation(1);
 
-      Serial.println("Button test");
       pinMode(BUTTON_A, INPUT_PULLUP);
       pinMode(BUTTON_B, INPUT_PULLUP);
       pinMode(BUTTON_C, INPUT_PULLUP);
@@ -57,12 +56,10 @@ bool Display::init(uint16_t retry){
 }
 
 void Display::on(void){
-  Serial.println("Display::on");
   this->enabled = true;
 }
 
 void Display::off(void){
-  Serial.println("Display::off");
   this->enabled = false;
   
   sh1107->setCursor(0,0);

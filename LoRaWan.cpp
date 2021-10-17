@@ -79,20 +79,13 @@ void do_send(osjob_t* j)
                 Serial.println(LoRaWan::sensor[i]->getName());
                 memcpy(&__payload[latestIndex], _payload, LoRaWan::sensor[i]->getPayloadSize());
                 mask |= 1 << i;
-                char mb[2];
-                sprintf(mb, "%d", mask);
-                Serial.print("MASK: ");Serial.println(mb);
             } else {
                 Serial.print("DATA NOT VALID FOR ");
                 Serial.println(LoRaWan::sensor[i]->getName());
             }
             latestIndex += LoRaWan::sensor[i]->getPayloadSize();
         }
-
-        char mb[2];
-        sprintf(mb, "%d", mask);
-        Serial.print("MASKF: ");Serial.println(mb);
-
+        
         // prepare upstream data transmission at the next possible time.
         // transmit on port 1 (the first parameter); you can use any value from 1 to 223 (others are reserved).
         // don't request an ack (the last parameter, if not zero, requests an ack from the network).

@@ -2,22 +2,23 @@
 #include <Wire.h>
 #include <Adafruit_GPS.h>
 #include <Adafruit_NeoPixel.h>
+#include <stdbool.h>
+#include <nrf.h>
 
 #include "Display.h"
-#include "SCD41.h"
+#include "DataLogger.h"
+#include "Timers.h"
 
+#include "SCD41.h"
 #include "Accelerometer.h"
 #include "APDS9960.h"
 #include "Battery.h"
 #include "BMP280.h"
 #include "Magnetometer.h"
-
-#include "DataLogger.h"
 #include "GPSUtil.h"
+
 #include "LoRaWan.h"
 
-#include <stdbool.h>
-#include "nrf.h"
 
 // Manual timer
 uint32_t timer = millis();
@@ -69,24 +70,6 @@ std::unique_ptr<Sensor> sensors[] = {
 bool LoRaWan::initialized = false;
 std::unique_ptr<Sensor>* LoRaWan::sensor = sensors;
 uint8_t LoRaWan::numSensors = sizeof(sensors)/sizeof(sensors[0]);
-
-void start_timer(void)
-{		
-  NRF_TIMER2->MODE = TIMER_MODE_MODE_Timer;          // Set the timer in Counter Mode
-  NRF_TIMER2->TASKS_CLEAR = 1;                       // clear the task first to be usable for later
-	NRF_TIMER2->PRESCALER = 0;                        // Set prescaler. Higher number gives slower timer. 
-                                                     // Prescaler = 0 gives 16MHz timer. f = 16 MHz / 2^(n)
-                                                     // f 1kHz ==> T 1ms ==> log2(16000) ==> 13.96
-	NRF_TIMER2->BITMODE = TIMER_BITMODE_BITMODE_16Bit; // Set counter to 16 bit resolution
-	NRF_TIMER2->CC[0] = 10000;                         // Set value for TIMER2 compare register 0
-	NRF_TIMER2->CC[1] = 5;                          // Set value for TIMER2 compare register 1
-		
-  // Enable interrupt on Timer 2, both for CC[0] and CC[1] compare match events
-	NRF_TIMER2->INTENSET = (TIMER_INTENSET_COMPARE0_Enabled << TIMER_INTENSET_COMPARE0_Pos) | (TIMER_INTENSET_COMPARE1_Enabled << TIMER_INTENSET_COMPARE1_Pos);
-  NVIC_EnableIRQ(TIMER2_IRQn);
-		
-  NRF_TIMER2->TASKS_START = 1;               // Start TIMER2
-}
 		
 extern "C"
 {
@@ -94,7 +77,7 @@ extern "C"
    */
   void TIMER2_IRQHandler(void)
   {
-    gps.readBytes();
+    // gps.readBytes();
     //LoRaWan::runLoopOnce();
     if ((NRF_TIMER2->EVENTS_COMPARE[0] != 0) && ((NRF_TIMER2->INTENSET & TIMER_INTENSET_COMPARE0_Msk) != 0))
     {
@@ -161,30 +144,44 @@ void setup() {
 }
 
 void loop() {
-  // we call the LMIC's runloop processor. This will cause things to happen based on events and time. One
-  // of the things that will happen is callbacks for transmission complete or received messages. We also
-  // use this loop to queue periodic data transmissions.  You can put other things here in the `loop()` routine,
-  // but beware that LoRaWAN timing is pretty tight, so if you do more than a few milliseconds of work, you
-  // will want to call `os_runloop_once()` every so often, to keep the radio running.
+  //NVIC_SystemReset(); DON'T USE FOR NOW!!!
+  gps.readBytes();
   LoRaWan::runLoopOnce();
 
   yield();
 
-  // approximately every PERIOD seconds or so, print out the current stats
+  // approximately every PERIOD milliseconds or so, print out the current stats
   if (millis() - timer > PERIOD) {
     // Timer and GPS
     timer = millis(); // reset the timer
     gps.read();
+    Serial.print("FIX: ");Serial.println(gps.fix());
 
     // Read Sensors
-    for(const auto& sensor : sensors) {
-      if (sensor->read()) {
-        sensor->debug();
-      } else {
-        Serial.print("ERROR READING "); Serial.println(sensor->getName());
-      }  
-    }
+    // for(const auto& sensor : sensors) {
+    //   if (sensor->read()) {
+    //     sensor->debug();
+    //   } else {
+    //     Serial.print("ERROR READING "); Serial.println(sensor->getName());
+    //   }  
+    // }
     
+    // Read VBat
+    // float vBat = battery.isValid() ? battery.getVBat() : 0.0;
+
+    // Read CO2 periodic measurement
+    if (scd41.isValid()) {
+      if (!gps.fix()) {
+        display.main(scd41.getCO2(), scd41.getTemperature(), scd41.getHumidity(), battery.getVBat());
+      } else {
+        display.main(scd41.getCO2(), scd41.getTemperature(), scd41.getHumidity(), battery.getVBat(), gps.latitude(), gps.lat(), gps.longitude(), gps.lon());
+      }
+    } else {
+        Serial.println(scd41.getErrorMessage());
+    }
+
+    // Display info or not?
+    accelerometer.read();
     //Serial.print("\nAccelAbs: ");Serial.print(accelerometer.getAccelAbs());Serial.println();
     if (accelerometer.getAccelAbs() < ACCEL_ABS_THRESHOLD) {
       display.off();
@@ -193,20 +190,6 @@ void loop() {
     } else {
       display.on();
       neopixel.show();
-    }
-
-    // Read VBat
-    float vBat = battery.isValid() ? battery.getVBat() : 0.0;
-
-    // Read CO2 periodic measurement
-    if (scd41.isValid()) {
-      if (!gps.fix()) {
-        display.main(scd41.getCO2(), scd41.getTemperature(), scd41.getHumidity(), vBat);
-      } else {
-        display.main(scd41.getCO2(), scd41.getTemperature(), scd41.getHumidity(), vBat, gps.latitude(), gps.lat(), gps.longitude(), gps.lon());
-      }
-    } else {
-        Serial.println(scd41.getErrorMessage());
     }
 
     // Color code

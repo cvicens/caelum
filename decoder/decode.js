@@ -6,7 +6,12 @@
 // GyrX: 0.06      GyrX: -0.10     GyrX: -0.09
 // VBat: 4.08
 
-let data = 'ACIDUr0BFw8wJgaABoAGgAA=';
+
+// Lat: 4028.735596 
+// Lon: 343.151703 
+// 40.48614194939981, -3.7211273343192204
+
+let data = 'AEYEDbYBGDoqFAIEwIoDGE4omAsCVw==';
 
 let bytes = Buffer.from(data, 'base64');
 
@@ -15,7 +20,7 @@ console.log(`bytes=${toHexString(bytes)}`);
 //var bytes = Buffer.from([12, 178, 4, 128, 247, 174]);
 var input = {
   bytes: bytes,
-  fPort: 7
+  fPort: 15
 }
 
 console.log(`input=${JSON.stringify(input)}`);
@@ -26,28 +31,40 @@ function toHexString(byteArray) {
     '');
 }
 
+/////////////////////////////// TTN CONVERTER
 // GCBA (GPS,CO2,BAT,ACC)
 const ACC_MASK = 1; // 0001
 const BAT_MASK = 2; // 0010
 const CO2_MASK = 4; // 0100
 const GPS_MASK = 8; // 1000
 
-function u162gps(sf2u16) {
-  let integer = sf2u16[0];   // INTEGER
-  let decimal = sf2u16[1]; // DECIMAL
+function u162gps(u16bytes) {
+  let integer = u16bytes[0];   // INTEGER
+  let decimal = u16bytes[1]; // DECIMAL
   
   return integer + (decimal / 10000);
 }
 
-function u162sf(sf2u16) {
-  let integer = sf2u16[0];   // INTEGER
-  let decimal = sf2u16[1]; // DECIMAL
+function u162sf(u16bytes) {
+  let integer = u16bytes[0];   // INTEGER
+  let decimal = u16bytes[1]; // DECIMAL
   
   return integer + (decimal / 100);
 }
 
+// Based on https://stackoverflow.com/a/37471538 by Ilya Bursov
+function bytesToFloat(bytes) {
+  var multiplied = u32(bytes);
+  
+  return multiplied / 100000 / 100;
+}  
+
 function u16(u8x2) {
   return (u8x2[1] << 8) | u8x2[0];
+}
+
+function u32(u8x4) {
+  return (u8x4[3] << 24) | (u8x4[2] << 16) | (u8x4[1] << 8) | u8x4[0];
 }
 
 function decodeUplink(input) {
@@ -70,10 +87,11 @@ function decodeUplink(input) {
   if ((input.fPort & GPS_MASK) === GPS_MASK) {
     data.event += "G";
     data.fq = input.bytes[10];
-    data.latitude = u162sf([input.bytes[11], input.bytes[12]]);
-    data.lat = String.fromCharCode(input.bytes[13]);
-    data.longitude = u162sf([input.bytes[14], input.bytes[15]]);
-    data.lon = String.fromCharCode(input.bytes[16]);
+    data.satellites = input.bytes[11];
+    data.latitude = bytesToFloat([input.bytes[12], input.bytes[13], input.bytes[14], input.bytes[15]]);
+    data.lat = String.fromCharCode(input.bytes[16]);
+    data.longitude = bytesToFloat([input.bytes[17], input.bytes[18], input.bytes[19], input.bytes[20]]);
+    data.lon = String.fromCharCode(input.bytes[21]);
   }
 
   var warnings = [];
@@ -85,5 +103,6 @@ function decodeUplink(input) {
     warnings: warnings
   };
 }
+/////////////////////////////// TTN CONVERTER
 
 console.log(decodeUplink(input));

@@ -53,11 +53,10 @@ class Sensor
       return (uint16_t)(d * 100) << 8 | (uint8_t)i & 0xff;
     }
 
-    static inline uint16_t gps2u16(float f){
-      float i {0};
-      float d = modf(f, &i);
-
-      return (uint16_t)(d * 10000) << 8 | (uint8_t)i & 0xff;
+    static inline uint32_t gps2u32(float f){
+      uint32_t fbits = 0;
+      memcpy(&fbits, &f, sizeof fbits);
+      return fbits;
     }
 };
 

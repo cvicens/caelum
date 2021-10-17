@@ -23,7 +23,7 @@
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO false
 
-#define PAYLOAD_SIZE 7
+#define PAYLOAD_SIZE 12
 
 class GPSUtil : public Sensor
 {

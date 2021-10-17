@@ -51,7 +51,7 @@ bool GPSUtil::readBytes(void)
 {
     if (!initialized) {
         Serial.println("GPSUtil::read(void) run .init()");
-        return false; // we can fail to parse a sentence in which case we should just wait for another
+        return false;
     }
 
     // Read data from the GPS => Very often!
@@ -67,7 +67,6 @@ bool GPSUtil::read(void)
             // a tricky thing here is if we print the NMEA sentence, or data
             // we end up not listening and catching other sentences!
             // so be very wary if using OUTPUT_ALLDATA and trying to print out data
-            // Serial.println("GPSUtil::parse(void)->newNMEAreceived");
             Serial.print(gps.lastNMEA()); // this also sets the newNMEAreceived() flag to false
 
             if (!gps.parse(gps.lastNMEA())) { // this also sets the newNMEAreceived() flag to false
@@ -88,20 +87,26 @@ uint8_t* GPSUtil::uplinkPayload(void)
 {
     // int -> int
     // place the bytes into the payload
-    this->payload[0] = lowByte(gps.fixquality);
-    this->payload[1] = lowByte(gps.satellites);
+    this->payload[0] = gps.fixquality;
+    this->payload[1] = gps.satellites;
 
-    uint16_t uintLatitude = Sensor::gps2u16(gps.latitude);
+    uint32_t uintLatitude = gps.latitude * 100000;
+    Serial.print("latitude ");Serial.print(gps.latitude);Serial.print(" lat ");Serial.print(gps.lat);Serial.print(" uintLatitude ");Serial.println(uintLatitude);
     // place the bytes into the payload
-    this->payload[2] = lowByte(uintLatitude);  // INTEGER
-    this->payload[3] = highByte(uintLatitude); // DECIMAL
-    this->payload[4] = gps.lat;
+    this->payload[2] = (uint8_t) ((uintLatitude)       & 0xff);
+    this->payload[3] = (uint8_t) ((uintLatitude >> 8)  & 0xff); 
+    this->payload[4] = (uint8_t) ((uintLatitude >> 16) & 0xff);
+    this->payload[5] = (uint8_t) ((uintLatitude >> 24) & 0xff); 
+    this->payload[6] = gps.lat;
 
-    uint16_t uintLongitude = Sensor::gps2u16(gps.latitude);
+    uint32_t uintLongitude = gps.longitude * 100000;
+    Serial.print("longitude ");Serial.print(gps.longitude);Serial.print(" lon ");Serial.print(gps.lon);Serial.print(" uintLongitude ");Serial.println(uintLongitude);
     // place the bytes into the payload
-    this->payload[5] = lowByte(uintLongitude);  // INTEGER
-    this->payload[6] = highByte(uintLongitude); // DECIMAL
-    this->payload[7] = gps.lon;
+    this->payload[7]  = (uint8_t) ((uintLongitude)       & 0xff);
+    this->payload[8]  = (uint8_t) ((uintLongitude >> 8)  & 0xff); 
+    this->payload[9]  = (uint8_t) ((uintLongitude >> 16) & 0xff);
+    this->payload[10] = (uint8_t) ((uintLongitude >> 24) & 0xff); 
+    this->payload[11] = gps.lon;    
 
     return this->payload;
 }
