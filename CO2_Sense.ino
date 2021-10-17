@@ -21,7 +21,7 @@
 
 // Manual timer
 uint32_t timer = millis();
-const uint32_t PERIOD = 5000;
+const uint32_t PERIOD = 15000;
 
 // OLED Display wrapper
 Display display = Display();
@@ -45,10 +45,10 @@ BMP280 bmp280;
 Magnetometer magnetometer;
 
 // Data logging
-DataLogger dataLogger = DataLogger();
+DataLogger dataLogger;
 
 // GPS util
-GPSUtil gps = GPSUtil();
+GPSUtil gps;
 
 // NeoPixel
 #define PIN PIN_NEOPIXEL
@@ -56,21 +56,16 @@ GPSUtil gps = GPSUtil();
 Adafruit_NeoPixel neopixel = Adafruit_NeoPixel(1, PIN_NEOPIXEL, NEO_GRB + NEO_KHZ800);;
 
 // Sensors queue
-// std::unique_ptr<Sensor> sensors[2];
-// sensors[0] = std::make_unique<SCD41>();
-// sensors[1] = std::make_unique<Accelerometer>(&accelerometer);
-// sensorQueue.push_back(std::make_unique<Accelerometer>(&accelerometer));
 std::unique_ptr<Sensor> sensors[] = { 
-  std::unique_ptr<SCD41>(&scd41),                 // CO2
-  std::unique_ptr<Accelerometer>(&accelerometer), // Accelerometer
-  // std::unique_ptr<Magnetometer>(&magnetometer),   // Magnetometer
-  std::unique_ptr<Battery>(&battery),             // Battery
   // std::unique_ptr<BMP280>(&bmp280),               // BMP280
+  // std::unique_ptr<Magnetometer>(&magnetometer),    // Magnetometer
+  std::unique_ptr<Accelerometer>(&accelerometer),  // Accelerometer
+  std::unique_ptr<Battery>(&battery),              // Battery
+  std::unique_ptr<SCD41>(&scd41),                  // CO2
+  std::unique_ptr<GPSUtil>(&gps),                  // GPS
 };
 
-// Lora
-// LoRaWan lorawan {sensors, sizeof(sensors)};
-
+// LoRaWan class only exposes static methods... the library is not very C++ friendly
 bool LoRaWan::initialized = false;
 std::unique_ptr<Sensor>* LoRaWan::sensor = sensors;
 uint8_t LoRaWan::numSensors = sizeof(sensors)/sizeof(sensors[0]);
@@ -99,7 +94,7 @@ extern "C"
    */
   void TIMER2_IRQHandler(void)
   {
-    gps.read();
+    gps.readBytes();
     //LoRaWan::runLoopOnce();
     if ((NRF_TIMER2->EVENTS_COMPARE[0] != 0) && ((NRF_TIMER2->INTENSET & TIMER_INTENSET_COMPARE0_Msk) != 0))
     {
@@ -130,6 +125,7 @@ void setup() {
     Serial.println("OLED KO");
   }
 
+  // Init selected sensors
   for(const auto& sensor : sensors) {
     if (sensor->init()) {
       Serial.print(sensor->getName());Serial.println(" OK");
@@ -140,7 +136,6 @@ void setup() {
 
   if (dataLogger.init()) {
     Serial.println("DATA_LOGGING OK");
-    //dataLogger.dumpToSerial(); // This makes the micro to stop working
   } else {
     Serial.println("DATA_LOGGING KO");
   }
@@ -177,20 +172,16 @@ void loop() {
 
   // approximately every PERIOD seconds or so, print out the current stats
   if (millis() - timer > PERIOD) {
-    if (!gps.isInit()) {
-      gps.init();
-    }
-
     // Timer and GPS
     timer = millis(); // reset the timer
-    gps.parse();
+    gps.read();
 
     // Read Sensors
     for(const auto& sensor : sensors) {
       if (sensor->read()) {
         sensor->debug();
       } else {
-        Serial.println("ERROR READING "); Serial.println(sensor->getName());
+        Serial.print("ERROR READING "); Serial.println(sensor->getName());
       }  
     }
     

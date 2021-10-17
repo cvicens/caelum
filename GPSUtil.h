@@ -11,7 +11,10 @@
 
 #include <SPI.h>
 #include <Wire.h>
+
 #include <Adafruit_GPS.h>
+
+#include "Sensor.h"
 
 // what's the name of the hardware serial port?
 #define GPSSerial Serial1
@@ -20,11 +23,11 @@
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO false
 
-class GPSUtil
+#define PAYLOAD_SIZE 7
+
+class GPSUtil : public Sensor
 {
   private:
-    bool initialized;
-
     // Connect to the GPS on the hardware port
     //Adafruit_GPS GPS;
 
@@ -35,11 +38,14 @@ class GPSUtil
     GPSUtil(void);
 
     bool init(void);
-    bool isInit(void);
     bool read(void);
-    bool parse(void);
-    
+
+    uint8_t* uplinkPayload(void);
+
     void debug(void);
+
+    bool readBytes(void);
+    bool parse(void);
 
     uint8_t day(void);
     uint8_t month(void);

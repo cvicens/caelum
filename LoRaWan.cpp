@@ -72,23 +72,26 @@ void do_send(osjob_t* j)
     } else {
         uint8_t latestIndex { 0 };
         uint8_t mask {0};
-        Serial.print("SIZE ");
-        Serial.println(LoRaWan::numSensors);
         for (int i = 0; i < LoRaWan::numSensors; i++) {
-            Serial.print("i ");
-            Serial.println(i);
             if (LoRaWan::sensor[i]->read() && LoRaWan::sensor[i]->isValid()) {
                 uint8_t* _payload = LoRaWan::sensor[i]->uplinkPayload();
                 Serial.print("UPLINK ");
                 Serial.println(LoRaWan::sensor[i]->getName());
                 memcpy(&__payload[latestIndex], _payload, LoRaWan::sensor[i]->getPayloadSize());
                 mask |= 1 << i;
+                char mb[2];
+                sprintf(mb, "%d", mask);
+                Serial.print("MASK: ");Serial.println(mb);
             } else {
-                Serial.println("DATA NOT VALID FOR ");
+                Serial.print("DATA NOT VALID FOR ");
                 Serial.println(LoRaWan::sensor[i]->getName());
             }
             latestIndex += LoRaWan::sensor[i]->getPayloadSize();
         }
+
+        char mb[2];
+        sprintf(mb, "%d", mask);
+        Serial.print("MASKF: ");Serial.println(mb);
 
         // prepare upstream data transmission at the next possible time.
         // transmit on port 1 (the first parameter); you can use any value from 1 to 223 (others are reserved).
