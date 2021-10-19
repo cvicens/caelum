@@ -1,3 +1,4 @@
+const logger = require("../logger");
 const mqtt = require('mqtt');
 
 const CAELUM_TOPIC = process.env.CAELUM_TOPIC || 'v3/caelum-air-quality@ttn/devices/eui-9676b6000010ab14/up';
@@ -21,27 +22,27 @@ const options = {
 let client = null;
 
 function connect(onMessage, onError) {
-    console.debug(`Connecting to ${JSON.stringify(options)}`)
+    logger.debug(`Connecting to ${JSON.stringify(options)}`)
     client = mqtt.connect(options);
 
     client.on('connect', () => {
         client.subscribe([CAELUM_TOPIC], (err) => {
             if (!err) {
-                console.log(`Correctly subscribed to: ${CAELUM_TOPIC}`);
+                logger.info(`Correctly subscribed to: ${CAELUM_TOPIC}`);
             } else {
-                console.log(`Error when subscribing to: ${CAELUM_TOPIC}`);
+                logger.info(`Error when subscribing to: ${CAELUM_TOPIC}`);
             }
         });
     });
 
     client.on('message', onMessage);
     // client.on('message', (topic, message, packet) => {
-	//     console.log("message is "+ message);
-	//     console.log("topic is "+ topic);
+	//     logger.info("message is "+ message);
+	//     logger.info("topic is "+ topic);
     // });
     client.on("error", onError);
     // client.on('error', (error) => {
-    //     console.log(`error: ${JSON.stringify(error)}`);
+    //     logger.info(`error: ${JSON.stringify(error)}`);
     // });
 }
 
