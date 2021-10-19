@@ -1,0 +1,76 @@
+{
+    "end_device_ids": {
+        "device_id": "eui-9676b6000010ab14",
+        "application_ids": {
+            "application_id": "caelum-air-quality"
+        },
+        "dev_eui": "9676B6000010AB14",
+        "join_eui": "0000000000000000",
+        "dev_addr": "260BF743"
+    },
+    "correlation_ids": [
+        "as:up:01FJAADVWGFPHA2Z225HFK6TDQ",
+        "gs:conn:01FJ84F4V1THZ7GM2YPT5Z5KGY",
+        "gs:up:host:01FJ84F4WGBCDCSAQYBDNPWTHS",
+        "gs:uplink:01FJAADVNVGQT7M7BY4Z5T7GW5",
+        "ns:uplink:01FJAADVNWA8Y6CGKDHVKS739J",
+        "rpc:/ttn.lorawan.v3.GsNs/HandleUplink:01FJAADVNWWEHVGS0YT7P17PDK",
+        "rpc:/ttn.lorawan.v3.NsAs/HandleUplink:01FJAADVWF97KGHB5C7CBY7PA1"
+    ],
+    "received_at": "2021-10-18T18:25:40.753767749Z",
+    "uplink_message": {
+        "session_key_id": "AXyO9ENAk1uhfjyK19061w==",
+        "f_port": 7,
+        "f_cnt": 2850,
+        "frm_payload": "AB4EBrICGUYqUQaABoAGgACAAIACVw==",
+        "decoded_payload": {
+            "accelAbs": 0.3,
+            "co2": 690,
+            "event": "ABC",
+            "humidity": 42.81,
+            "temperature": 25.7,
+            "vBat": 4.06
+        },
+        "rx_metadata": [
+            {
+                "gateway_ids": {
+                    "gateway_id": "caelum-ttig-1",
+                    "eui": "58A0CBFFFE802402"
+                },
+                "time": "2021-10-18T18:25:40.456579923Z",
+                "timestamp": 342469715,
+                "rssi": -55,
+                "channel_rssi": -55,
+                "snr": 10,
+                "uplink_token": "ChsKGQoNY2FlbHVtLXR0aWctMRIIWKDL//6AJAIQ09imowEaDAik+LaLBhDTw6+BAiC4yKTm+9YQ"
+            }
+        ],
+        "settings": {
+            "data_rate": {
+                "lora": {
+                    "bandwidth": 125000,
+                    "spreading_factor": 7
+                }
+            },
+            "data_rate_index": 5,
+            "coding_rate": "4/5",
+            "frequency": "867100000",
+            "timestamp": 342469715,
+            "time": "2021-10-18T18:25:40.456579923Z"
+        },
+        "received_at": "2021-10-18T18:25:40.541020322Z",
+        "consumed_airtime": "0.077056s",
+        "locations": {
+            "frm-payload": {
+                "latitude": 40.287184,
+                "longitude": 3.43133,
+                "source": "SOURCE_GPS"
+            }
+        },
+        "network_ids": {
+            "net_id": "000013",
+            "tenant_id": "ttn",
+            "cluster_id": "ttn-eu1"
+        }
+    }
+}
